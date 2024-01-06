@@ -10,11 +10,11 @@ const sendNotification = (notification) => {
   client.publish('notifications/add', JSON.stringify(notification), {
     qos: 1,
   })
-  console.log('sent notification with id: ' + notification.id)
+  log('sent notification with id: ' + notification.id)
 }
 
 const log = (message) => {
-  log(new Date().toLocaleString() + ': ' + message)
+  console.log(new Date().toLocaleString() + ': ' + message)
 }
 
 client.on("connect", () => {
