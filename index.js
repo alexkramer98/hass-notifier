@@ -1,71 +1,56 @@
 import mqtt from 'mqtt';
 import dotenv from "dotenv";
-import axios from 'axios';
 
 dotenv.config();
 
 const client = mqtt.connect(`mqtt://${process.env.MQTT_BROKER_DSN}`);
-const activeNotifications = []
+let activeNotifications = []
 
-const notifyUrl = `https://${process.env.HASS_ENDPOINT}/api/services/notify/mobile_app_${process.env.HASS_PHONE_NAME}`;
-
-const sendNotification = async (notification) => {
-  const resp = await axios.post(
-    notifyUrl,
-    notification,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.HASS_TOKEN}`,
-        'Content-Type': 'application/json',
-      }
-    }
-  )
-}
-
-const clearNotification = async (tag) => {
-  await sendNotification({
-    message: 'clear_notification',
-    data: {
-      tag
-    }
+const sendNotification = (notification) => {
+  client.publish('notifications/add', JSON.stringify(notification), {
+    qos: 1,
   })
 }
 
-await sendNotification({
-  message: 'test',
-  title: 'test',
-  data: {
-    actions: [{
-      action: 'test',
-      title: 'test'
-    }],
-    tag: 'ambi',
-    persistent: true,
-    sticky: true,
-    channel: '_silent',
-    icon_url: '/local/icons/music.png'
-  }
-})
-
 client.on("connect", () => {
-  client.subscribe("notifications/add");
-  client.subscribe("notifications/remove");
-  client.subscribe("notifications/respawn");
+  client.subscribe([
+    "notifications/add",
+    "notifications/user-close",
+    "notifications/replay-items"
+  ]);
 });
 
+client.on('error', (error) => {
+  console.error(error)
+})
+
 client.on("message", async (topic, message) => {
+  const messageString = message.toString()
+
   switch (topic) {
     case "notifications/add":
-      activeNotifications.push(message);
-      await sendNotification(JSON.parse(message.toString()))
+      const payload = JSON.parse(messageString)
+      if (payload.isPersistent) {
+        const existingIndex = activeNotifications.findIndex(item => item.id === payload.id)
+        if (existingIndex !== -1) {
+          activeNotifications[existingIndex] = payload
+        } else {
+          activeNotifications.push(payload);
+        }
+      }
       break;
-    case "notifications/remove":
-      activeNotifications.splice(activeNotifications.indexOf(message), 1);
-      await clearNotification(message.toString())
+    case "notifications/user-close":
+      const existingNotification = activeNotifications.find(item => item.id === messageString)
+      if (existingNotification) {
+        await sendNotification(existingNotification)
+      }
       break;
-    case "notifications/respawn":
-      for (const notification of activeNotifications) {
-        await sendNotification(JSON.parse(notification))
+    case "notifications/replay-items":
+      for (let i = 0; i < activeNotifications.length; i++) {
+        const activeNotification = activeNotifications[i]
+        setTimeout(async () => {
+          await sendNotification(activeNotification)
+        }, i * 3000)
       }
   }
 });

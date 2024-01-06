@@ -1,0 +1,12 @@
+{
+  "name": "hass-notifier",
+  "packageManager": "yarn@4.0.2",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "mqtt": "^5.3.4"
+  },
+  "scripts": {
+    "start": "node ./index.js"
+  }
+}
