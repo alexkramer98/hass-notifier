@@ -10,6 +10,11 @@ const sendNotification = (notification) => {
   client.publish('notifications/add', JSON.stringify(notification), {
     qos: 1,
   })
+  console.log('sent notification with id: ' + notification.id)
+}
+
+const log = (message) => {
+  console.log(new Date().toLocaleString() + ': ' + message)
 }
 
 client.on("connect", () => {
@@ -18,10 +23,11 @@ client.on("connect", () => {
     "notifications/user-close",
     "notifications/replay-items"
   ]);
+  log('connected.')
 });
 
 client.on('error', (error) => {
-  console.error(error)
+  log('[Error]: ' + error.message)
 })
 
 client.on("message", async (topic, message) => {
@@ -31,6 +37,7 @@ client.on("message", async (topic, message) => {
     case "notifications/add":
       const payload = JSON.parse(messageString)
       if (payload.isPersistent) {
+        log('adding persistent notification with id: ' + payload.id)
         const existingIndex = activeNotifications.findIndex(item => item.id === payload.id)
         if (existingIndex !== -1) {
           activeNotifications[existingIndex] = payload
@@ -40,12 +47,14 @@ client.on("message", async (topic, message) => {
       }
       break;
     case "notifications/user-close":
+      log('user closed notification with id: ' + messageString)
       const existingNotification = activeNotifications.find(item => item.id === messageString)
       if (existingNotification) {
         await sendNotification(existingNotification)
       }
       break;
     case "notifications/replay-items":
+      log('system requested replay of notifications.')
       for (let i = 0; i < activeNotifications.length; i++) {
         const activeNotification = activeNotifications[i]
         setTimeout(async () => {
