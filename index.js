@@ -14,7 +14,7 @@ const sendNotification = (notification) => {
 }
 
 const log = (message) => {
-  console.log(new Date().toLocaleString() + ': ' + message)
+  log(new Date().toLocaleString() + ': ' + message)
 }
 
 client.on("connect", () => {
