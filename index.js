@@ -1,9 +1,9 @@
-import mqtt from 'mqtt';
-import dotenv from "dotenv";
+import mqtt from 'mqtt'
+import dotenv from "dotenv"
 
-dotenv.config();
+dotenv.config()
 
-const client = mqtt.connect(`mqtt://${process.env.MQTT_BROKER_DSN}`);
+const client = mqtt.connect(`mqtt://${process.env.MQTT_BROKER_DSN}`)
 let activeNotifications = []
 
 const sendNotification = (notification) => {
@@ -18,16 +18,18 @@ const log = (message) => {
 }
 
 client.on("connect", () => {
+
   client.subscribe([
     "notifications/add",
     "notifications/user-close",
-    "notifications/replay-items"
-  ]);
+    "notifications/clear-item",
+    "notifications/replay-items",
+  ])
   log('connected.')
-});
+})
 
 client.on('error', (error) => {
-  log('[Error]: ' + error.message)
+  log('[error]: ' + error.message)
 })
 
 client.on("message", async (topic, message) => {
@@ -42,17 +44,21 @@ client.on("message", async (topic, message) => {
         if (existingIndex !== -1) {
           activeNotifications[existingIndex] = payload
         } else {
-          activeNotifications.push(payload);
+          activeNotifications.push(payload)
         }
       }
-      break;
+      break
     case "notifications/user-close":
       log('user closed notification with id: ' + messageString)
       const existingNotification = activeNotifications.find(item => item.id === messageString)
       if (existingNotification) {
         await sendNotification(existingNotification)
       }
-      break;
+      break
+    case "notifications/clear-item":
+      log('clearing notification with id: ' + messageString)
+      activeNotifications = activeNotifications.filter(item => item.id !== messageString)
+      break
     case "notifications/replay-items":
       log('system requested replay of notifications.')
       for (let i = 0; i < activeNotifications.length; i++) {
@@ -62,4 +68,4 @@ client.on("message", async (topic, message) => {
         }, i * 3000)
       }
   }
-});
+})
