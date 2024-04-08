@@ -7,7 +7,8 @@
     "mqtt": "^5.3.4"
   },
   "scripts": {
-    "start": "node ./index.js"
+    "start": "node ./index.js",
+    "publish": "docker buildx create --use && docker buildx build --push --platform linux/amd64 -t alexkramer98/hass-notifier ."
   },
   "license": "MIT"
 }
