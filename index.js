@@ -3,7 +3,7 @@ import dotenv from "dotenv"
 
 dotenv.config()
 
-const client = mqtt.connect(`mqtt://${process.env.MQTT_BROKER_DSN}`)
+const client = mqtt.connect(`${process.env.MQTT_BROKER_DSN}`)
 let activeNotifications = []
 
 const sendNotification = (notification) => {
