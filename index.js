@@ -7,9 +7,9 @@ const client = mqtt.connect(`${process.env.MQTT_BROKER_DSN}`)
 let activeNotifications = []
 
 const sendNotification = (notification) => {
-  client.publish('notifications/add', JSON.stringify(notification), {
-    qos: 1,
-  })
+  // hass handles this topic too using an automation and actually sends the notification to the phone
+  // maybe we shouldn't do it like this, but for now (tm) it works
+  client.publish('notifications/add', JSON.stringify(notification), { qos: 1 })
   log('sent notification with id: ' + notification.id)
 }
 
@@ -37,15 +37,21 @@ client.on("message", async (topic, message) => {
 
   switch (topic) {
     case "notifications/add":
+      // todo: als nieuwe melding niet persistent en oude wel, oude verwijderen. Dus onderstaande niet alleen runnen als NIEUWE persistent is
       const payload = JSON.parse(messageString)
+      const existingIndex = activeNotifications.findIndex(item => item.id === payload.id)
+
       if (payload.isPersistent) {
-        log('adding persistent notification with id: ' + payload.id)
-        const existingIndex = activeNotifications.findIndex(item => item.id === payload.id)
-        if (existingIndex !== -1) {
-          activeNotifications[existingIndex] = payload
-        } else {
+        if (existingIndex === -1) {
+          log('adding persistent notification with id: ' + payload.id)
           activeNotifications.push(payload)
+        } else {
+          log('changing persistent notification with id: ' + payload.id)
+          activeNotifications[existingIndex] = payload
         }
+      } else if (existingIndex !== -1) {
+        log('clearing previously persistent notification which changed to non-persistent notification: ' + payload.id)
+        activeNotifications.splice(existingIndex, 1)
       }
       break
     case "notifications/user-close":
