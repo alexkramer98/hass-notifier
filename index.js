@@ -37,7 +37,6 @@ client.on("message", async (topic, message) => {
 
   switch (topic) {
     case "notifications/add":
-      // todo: als nieuwe melding niet persistent en oude wel, oude verwijderen. Dus onderstaande niet alleen runnen als NIEUWE persistent is
       const payload = JSON.parse(messageString)
       const existingIndex = activeNotifications.findIndex(item => item.id === payload.id)
 
