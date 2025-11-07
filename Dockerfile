@@ -1,4 +1,4 @@
-FROM node:20
-COPY package.json yarn.lock index.js .env ./
-RUN yarn install --immutable
-CMD ["yarn", "start"]
+FROM imbios/bun-node:1.3.1-24-alpine
+COPY package.json bun.lock index.js .env ./
+RUN bun install --immutable
+CMD ["bun", "run", "start"]
